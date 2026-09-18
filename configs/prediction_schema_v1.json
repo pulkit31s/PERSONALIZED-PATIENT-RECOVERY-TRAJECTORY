@@ -1,0 +1,114 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "prediction_schema_v1",
+  "title": "ICU Recovery Trajectory Prediction Response",
+  "description": "Versioned response schema for the prediction endpoint. All data is synthetic/mock.",
+  "type": "object",
+  "required": ["schema_version", "request", "predictions", "data_quality", "metadata", "replay"],
+  "properties": {
+    "schema_version": {
+      "type": "string",
+      "const": "prediction_schema_v1"
+    },
+    "request": {
+      "type": "object",
+      "required": ["stay_id", "prediction_time"],
+      "properties": {
+        "stay_id": { "type": "string" },
+        "prediction_time": { "type": "string", "format": "date-time" }
+      }
+    },
+    "predictions": {
+      "type": "object",
+      "required": ["sofa_delta_24h", "sofa_delta_48h", "remaining_icu_time", "organ_support_initiation"],
+      "properties": {
+        "sofa_delta_24h": {
+          "type": "object",
+          "required": ["value", "unit"],
+          "properties": {
+            "value": { "type": "number" },
+            "unit": { "type": "string", "const": "SOFA points" }
+          }
+        },
+        "sofa_delta_48h": {
+          "type": "object",
+          "required": ["value", "unit"],
+          "properties": {
+            "value": { "type": "number" },
+            "unit": { "type": "string", "const": "SOFA points" }
+          }
+        },
+        "remaining_icu_time": {
+          "type": "object",
+          "required": ["value", "unit"],
+          "properties": {
+            "value": { "type": "number" },
+            "unit": { "type": "string", "const": "hours" }
+          }
+        },
+        "organ_support_initiation": {
+          "type": "object",
+          "required": ["probability", "threshold", "alert", "monitored_support_types"],
+          "properties": {
+            "probability": { "type": "number", "minimum": 0, "maximum": 1 },
+            "threshold": { "type": "number", "minimum": 0, "maximum": 1 },
+            "alert": { "type": "boolean" },
+            "monitored_support_types": {
+              "type": "array",
+              "items": { "type": "string" }
+            }
+          }
+        }
+      }
+    },
+    "explanations": {
+      "type": ["object", "null"],
+      "properties": {
+        "status": { "type": "string" },
+        "method": { "type": "string" },
+        "items": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "feature_name": { "type": "string" },
+              "contribution": { "type": "number" },
+              "direction": { "type": "string", "enum": ["positive", "negative"] }
+            }
+          }
+        }
+      }
+    },
+    "data_quality": {
+      "type": "object",
+      "required": ["observed_bin_count", "total_bin_count", "is_mock_data"],
+      "properties": {
+        "observed_bin_count": { "type": "integer" },
+        "total_bin_count": { "type": "integer" },
+        "missingness_summary": { "type": "object" },
+        "is_mock_data": { "type": "boolean" }
+      }
+    },
+    "metadata": {
+      "type": "object",
+      "required": ["pipeline_version", "model_manifest_version", "feature_schema_version", "label_schema_version", "preprocessor_version", "model_hash"],
+      "properties": {
+        "pipeline_version": { "type": "string" },
+        "model_manifest_version": { "type": "string" },
+        "feature_schema_version": { "type": "string" },
+        "label_schema_version": { "type": "string" },
+        "preprocessor_version": { "type": "string" },
+        "model_hash": { "type": "string" }
+      }
+    },
+    "replay": {
+      "type": "object",
+      "required": ["mode", "future_data_used", "history_truncated_at"],
+      "properties": {
+        "mode": { "type": "string" },
+        "future_data_used": { "type": "boolean" },
+        "history_truncated_at": { "type": "string", "format": "date-time" }
+      }
+    }
+  }
+}

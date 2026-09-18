@@ -1,0 +1,74 @@
+# Feature Schema v1 — Mock Feature Builder Configuration
+# All values are mock; must be verified before real-data use.
+
+version: "feature_schema_v1"
+is_mock: true
+
+temporal_features:
+  lookback_hours: 48
+  bin_size_hours: 6
+  num_bins: 8
+  alignment: "right"   # most recent bin is rightmost
+  padding: "zero"      # pad with zeros for bins before ICU admission
+
+  channels:
+    - name: heart_rate
+      type: vital
+      unit: bpm
+      expected_range: [40, 200]
+    - name: sbp
+      type: vital
+      unit: mmHg
+      expected_range: [60, 250]
+    - name: dbp
+      type: vital
+      unit: mmHg
+      expected_range: [30, 150]
+    - name: resp_rate
+      type: vital
+      unit: breaths_per_min
+      expected_range: [6, 50]
+    - name: spo2
+      type: vital
+      unit: percent
+      expected_range: [70, 100]
+    - name: temperature
+      type: vital
+      unit: celsius
+      expected_range: [34.0, 42.0]
+    - name: wbc
+      type: lab
+      unit: K_per_uL
+      expected_range: [1.0, 50.0]
+    - name: creatinine
+      type: lab
+      unit: mg_per_dL
+      expected_range: [0.2, 15.0]
+    - name: lactate
+      type: lab
+      unit: mmol_per_L
+      expected_range: [0.5, 20.0]
+    - name: platelets
+      type: lab
+      unit: K_per_uL
+      expected_range: [10, 600]
+
+static_features:
+  - name: age
+    type: demographic
+    unit: years
+  - name: sex
+    type: demographic
+    encoding: one_hot
+    categories: [M, F]
+
+masks:
+  observation_mask:
+    description: "1 if at least one observation exists in the bin, 0 otherwise"
+  padding_mask:
+    description: "1 if the bin is within the ICU stay, 0 if before admission"
+
+time_since_last_observation:
+  description: "Hours since the last observation for each channel in each bin"
+  abbreviation: "TSLO"
+  fill_value: -1  # if no prior observation exists

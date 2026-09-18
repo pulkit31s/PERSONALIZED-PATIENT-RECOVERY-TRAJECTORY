@@ -1,0 +1,18 @@
+{
+  "preprocessor_version": "mock_preprocessor_v1",
+  "is_mock": true,
+  "description": "Mock preprocessor configuration — no real normalization applied",
+  "normalization": {
+    "method": "identity",
+    "note": "Real implementation should use z-score or min-max from training set"
+  },
+  "imputation": {
+    "method": "forward_fill_then_zero",
+    "note": "Mock imputation; real implementation needs clinically appropriate strategy"
+  },
+  "feature_schema_version": "feature_schema_v1",
+  "provenance": {
+    "source": "synthetic",
+    "clinical_validity": false
+  }
+}

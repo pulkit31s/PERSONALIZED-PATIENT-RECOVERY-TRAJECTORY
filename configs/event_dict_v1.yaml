@@ -1,0 +1,205 @@
+# ==============================================================================
+# Event Dictionary v1 — Organ-Support Endpoint Definitions
+# ==============================================================================
+# STATUS: MOCK — All definitions use synthetic agent names.
+#         Must be verified against real MIMIC-IV v2.2 schema before production.
+# ==============================================================================
+
+version: "event_dict_v1"
+status: "mock_frozen"
+frozen_date: "2026-09-18"
+endpoint_name: "organ_support_initiation_24h"
+prediction_horizon_hours: 24
+
+# --------------------------------------------------------------------------
+# Interval convention: (t, t + 24h]
+#   - Events exactly at t define "current state" (used to check already-ON).
+#   - Events strictly after t up to and including t + 24h are the horizon.
+# --------------------------------------------------------------------------
+interval_convention:
+  left_boundary: "exclusive"       # t itself is NOT part of the initiation window
+  right_boundary: "inclusive"      # t + 24h IS part of the initiation window
+  notation: "(t, t + 24h]"
+
+# --------------------------------------------------------------------------
+# Support components
+# --------------------------------------------------------------------------
+support_components:
+
+  vasopressors:
+    description: >
+      Qualifying vasopressor agents. For mock data, a small synthetic list is
+      used. The real MIMIC-IV mapping must be verified against the
+      inputevents / d_items tables before production use.
+    qualifying_agents:
+      - norepinephrine
+      - epinephrine
+      - vasopressin
+      - dopamine
+      - phenylephrine
+    # TODO: Replace with verified MIMIC-IV itemid mapping via adapter
+    mimic_adapter: "not_implemented"
+    required_fields:
+      - agent_name
+      - start_time
+      - end_time           # may be null (see missing_end_time_policy)
+    optional_fields:
+      - rate
+      - rate_unit
+      - route
+
+  invasive_ventilation:
+    description: >
+      Invasive mechanical ventilation via endotracheal tube or tracheostomy.
+      Non-invasive ventilation (NIV), high-flow nasal cannula (HFNC), and
+      generic oxygen therapy do NOT qualify.
+    qualifying_modes:
+      - invasive_mechanical_ventilation
+    non_qualifying_modes:
+      - non_invasive_ventilation
+      - high_flow_nasal_cannula
+      - generic_oxygen_support
+    # TODO: Replace with verified MIMIC-IV ventilation concept and provenance
+    mimic_adapter: "not_implemented"
+    required_fields:
+      - ventilation_type
+      - start_time
+      - end_time           # may be null
+
+# --------------------------------------------------------------------------
+# State definitions
+# --------------------------------------------------------------------------
+state_definitions:
+  "ON":
+    description: >
+      The support component is actively running at the evaluation time.
+      A component is ON at time t if there exists an interval [start, end]
+      such that start <= t and (end is null OR end >= t).
+    overlapping_intervals: >
+      Overlapping or abutting intervals are merged. The component is ON
+      if any merged interval covers the evaluation time.
+  "OFF":
+    description: >
+      The support component is not actively running at the evaluation time.
+      No qualifying interval covers time t.
+
+# --------------------------------------------------------------------------
+# Initiation rule
+# --------------------------------------------------------------------------
+initiation_rule:
+  description: >
+    A new OFF-to-ON transition of a qualifying support component within the
+    prediction horizon (t, t + 24h].
+  composite_logic: "OR"
+  components:
+    - vasopressor_initiation
+    - invasive_ventilation_initiation
+  already_on_policy: >
+    If a component is already ON at time t, it is NOT a new initiation for
+    that component. However, the other component may still be eligible.
+  earliest_event: >
+    If multiple qualifying initiations occur, the earliest event time is
+    recorded. The label is positive as soon as the first qualifying OFF->ON
+    transition is found.
+
+# --------------------------------------------------------------------------
+# Censoring rules
+# --------------------------------------------------------------------------
+censoring_rules:
+  description: >
+    Rules for handling incomplete follow-up within the 24-hour horizon.
+  rules:
+    - condition: "positive_initiation_before_icu_exit"
+      label: true
+      status: "positive"
+      note: "Event occurred; label is positive regardless of subsequent exit."
+
+    - condition: "no_event_complete_followup"
+      label: false
+      status: "negative"
+      note: "Full 24h observed with no qualifying initiation."
+
+    - condition: "icu_exit_before_horizon_no_event"
+      label: null
+      status: "censored"
+      note: >
+        Patient left ICU (discharge or death) before 24h elapsed, and no
+        qualifying event occurred before exit. Cannot determine whether an
+        event would have occurred. Must NOT be silently treated as negative.
+
+    - condition: "icu_exit_before_horizon_with_event"
+      label: true
+      status: "positive"
+      note: "Event occurred before ICU exit; label is positive."
+
+  censoring_metadata_fields:
+    - censoring_time
+    - censoring_reason
+    - follow_up_hours
+
+# --------------------------------------------------------------------------
+# Event-time policy
+# --------------------------------------------------------------------------
+event_time_policy:
+  history_inclusion: "event_time <= prediction_time"
+  description: >
+    At prediction time t, only events with event_time <= t may be used as
+    model inputs. Future events must never influence the feature tensor.
+  boundary_event_at_t: >
+    An event exactly at t is included in history (for determining current
+    state) but is NOT considered a new initiation within (t, t+24h].
+
+# --------------------------------------------------------------------------
+# Missing / invalid data handling
+# --------------------------------------------------------------------------
+missing_data_policy:
+  missing_end_time:
+    description: >
+      If a support interval has a start_time but no end_time, it is treated
+      as still active (ON) at any evaluation time >= start_time.
+    action: "treat_as_ongoing"
+  invalid_interval:
+    description: >
+      If end_time < start_time, the interval is rejected as invalid.
+    action: "reject_with_warning"
+  null_start_time:
+    description: >
+      If start_time is null, the event cannot be used and is skipped with a
+      warning logged.
+    action: "skip_with_warning"
+
+# --------------------------------------------------------------------------
+# Provenance
+# --------------------------------------------------------------------------
+provenance:
+  source: "synthetic_mock_data"
+  clinical_validity: false
+  notes:
+    - "All agent names are synthetic placeholders."
+    - "Must NOT be used for clinical decision-making."
+    - "MIMIC-IV v2.2 itemid mappings are not implemented."
+    - "Ventilation concept requires verification against published provenance."
+  review_required_before:
+    - "prevalence_inspection"
+    - "real_data_modeling"
+    - "production_deployment"
+
+# --------------------------------------------------------------------------
+# Freeze discipline
+# --------------------------------------------------------------------------
+freeze_discipline:
+  rule_1: "Event dictionary must be reviewed before prevalence inspection."
+  rule_2: "Definitions must not be changed merely to improve class balance."
+  rule_3: "Any scientific definition change requires a version increment."
+  rule_4: "Mock definitions must be replaced or verified before real-data modeling."
+
+# --------------------------------------------------------------------------
+# Known limitations
+# --------------------------------------------------------------------------
+known_limitations:
+  - "Vasopressor list is synthetic and not mapped to MIMIC-IV itemids."
+  - "Ventilation types are simplified categories, not verified clinical concepts."
+  - "Rate thresholds are not implemented (any rate > 0 qualifies)."
+  - "Route validation (IV only for vasopressors) is not enforced."
+  - "Time resolution is datetime-level; sub-second events are not supported."
+  - "Drug name normalization is not implemented."

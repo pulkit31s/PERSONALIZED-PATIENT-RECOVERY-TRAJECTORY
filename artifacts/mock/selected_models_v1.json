@@ -1,0 +1,60 @@
+{
+  "manifest_version": "selected_models_v1",
+  "description": "Mock model manifest — NOT trained on clinical data",
+  "is_mock": true,
+  "tasks": {
+    "sofa_delta_24h": {
+      "family": "mock",
+      "model_version": "mock_sofa_24_v1",
+      "model_hash": "mock-sofa24-hash-abc123",
+      "calibration": "none",
+      "threshold": null,
+      "unit": "SOFA points",
+      "preprocessor_version": "mock_preprocessor_v1",
+      "explanation_adapter": "mock_feature_contribution"
+    },
+    "sofa_delta_48h": {
+      "family": "mock",
+      "model_version": "mock_sofa_48_v1",
+      "model_hash": "mock-sofa48-hash-def456",
+      "calibration": "none",
+      "threshold": null,
+      "unit": "SOFA points",
+      "preprocessor_version": "mock_preprocessor_v1",
+      "explanation_adapter": "mock_feature_contribution"
+    },
+    "remaining_icu_time": {
+      "family": "mock",
+      "model_version": "mock_icu_time_v1",
+      "model_hash": "mock-icutime-hash-ghi789",
+      "calibration": "none",
+      "threshold": null,
+      "unit": "hours",
+      "preprocessor_version": "mock_preprocessor_v1",
+      "explanation_adapter": "mock_feature_contribution"
+    },
+    "organ_support_initiation": {
+      "family": "mock",
+      "model_version": "mock_support_v1",
+      "model_hash": "mock-support-hash-jkl012",
+      "calibration": "mock",
+      "threshold": 0.5,
+      "unit": "probability",
+      "preprocessor_version": "mock_preprocessor_v1",
+      "explanation_adapter": "mock_feature_contribution",
+      "monitored_support_types": [
+        "vasopressor",
+        "invasive_ventilation"
+      ]
+    }
+  },
+  "provenance": {
+    "source": "synthetic",
+    "clinical_validity": false,
+    "notes": [
+      "All model versions are mock placeholders.",
+      "Model hashes are synthetic strings.",
+      "No real training or calibration has been performed."
+    ]
+  }
+}
