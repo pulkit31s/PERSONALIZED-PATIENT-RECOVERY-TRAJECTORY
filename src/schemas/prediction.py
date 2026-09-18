@@ -2,7 +2,6 @@
 from pydantic import BaseModel, Field, field_validator
 from datetime import datetime, timezone
 from typing import Optional, List, Dict, Any
-from enum import Enum
 
 class PredictionRequest(BaseModel):
     stay_id: str = Field(min_length=1)
@@ -15,64 +14,67 @@ class PredictionRequest(BaseModel):
             raise ValueError("prediction_time must be timezone-aware")
         return v
 
-    model_config = {
-        "json_schema_extra": {
-            "example": {
-                "stay_id": "mock_stay_001",
-                "prediction_time": "2026-01-01T12:00:00Z",
-                "include_explanations": True
-            }
-        }
-    }
+class RecoveryPrediction(BaseModel):
+    delta_24h: float
+    delta_48h: float
+    reconstructed_sofa_24h: float
+    reconstructed_sofa_48h: float
 
-class SOFAPrediction(BaseModel):
-    value: float
-    unit: str = 'SOFA points'
-
-class RemainingICUTimePrediction(BaseModel):
-    value: float
-    unit: str = 'hours'
-
+class ICUStayTimePrediction(BaseModel):
+    remaining_hours: float
+    
 class OrganSupportPrediction(BaseModel):
-    probability: float = Field(ge=0.0, le=1.0)
-    threshold: float = Field(ge=0.0, le=1.0)
-    alert: bool
-    monitored_support_types: List[str]
+    calibrated_probability: float = Field(ge=0.0, le=1.0)
+    threshold: Optional[float] = None
+    support_class: Optional[bool] = None
 
 class Predictions(BaseModel):
-    sofa_delta_24h: SOFAPrediction
-    sofa_delta_48h: SOFAPrediction
-    remaining_icu_time: RemainingICUTimePrediction
-    organ_support_initiation: OrganSupportPrediction
+    recovery: RecoveryPrediction
+    icu_stay_time: ICUStayTimePrediction
+    organ_support: OrganSupportPrediction
 
 class ExplanationItem(BaseModel):
     feature_name: str
+    time_bin: Optional[str] = None
+    timestep: Optional[int] = None
+    feature_value: Optional[float] = None
     contribution: float
     direction: str
 
-class Explanations(BaseModel):
+class TaskExplanation(BaseModel):
+    model_config = {"protected_namespaces": ()}
     status: str
     method: str
+    model_hash: str
+    prediction_cutoff: datetime
     items: List[ExplanationItem] = Field(default_factory=list)
 
 class DataQuality(BaseModel):
-    observed_bin_count: int
-    total_bin_count: int
-    missingness_summary: Dict[str, Any] = Field(default_factory=dict)
-    is_mock_data: bool = True
+    observed_bin_counts: Dict[str, int] = Field(default_factory=dict)
+    missingness_summaries: Dict[str, Dict[str, Any]] = Field(default_factory=dict)
+    padding_indicators: Dict[str, bool] = Field(default_factory=dict)
+    available_historical_information: Dict[str, Any] = Field(default_factory=dict)
+    feature_masks: Dict[str, Any] = Field(default_factory=dict)
+
+class TaskMetadata(BaseModel):
+    model_config = {"protected_namespaces": ()}
+    model_family: str
+    model_version: str
+    artifact_hash: str
+    feature_version: str
+    label_version: str
+    split_version: str
+    preprocessor_version: str
+    calibrator_version: Optional[str] = None
+    threshold_version: Optional[str] = None
 
 class PredictionMetadata(BaseModel):
     model_config = {"protected_namespaces": ()}
-
-    pipeline_version: str
-    model_manifest_version: str
-    feature_schema_version: str
-    label_schema_version: str
-    preprocessor_version: str
-    model_hash: str
+    global_pipeline_version: str
+    tasks: Dict[str, TaskMetadata]
 
 class ReplayInfo(BaseModel):
-    mode: str = 'retrospective_sequential_replay'
+    mode: str = 'RETROSPECTIVE_SEQUENTIAL_REPLAY'
     future_data_used: bool = False
     history_truncated_at: datetime
 
@@ -84,7 +86,7 @@ class PredictionResponse(BaseModel):
     schema_version: str = 'prediction_schema_v1'
     request: RequestEcho
     predictions: Predictions
-    explanations: Optional[Explanations] = None
+    explanations: Optional[Dict[str, TaskExplanation]] = None
     data_quality: DataQuality
     metadata: PredictionMetadata
     replay: ReplayInfo

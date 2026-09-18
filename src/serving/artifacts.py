@@ -3,6 +3,7 @@ import yaml
 import os
 from typing import Dict, Any, Optional
 import logging
+from src.serving.validation import ArtifactLoadError, ArtifactMismatchError
 
 class ArtifactLoader:
     """Loads artifacts for prediction serving."""
@@ -19,14 +20,7 @@ class ArtifactLoader:
         self._feature_schema: Optional[Dict] = None
 
     def load_model_manifest(self) -> Dict[str, Any]:
-        """Load and cache the model manifest.
-        
-        Returns:
-            Dict: The model manifest
-        
-        Raises:
-            FileNotFoundError: If manifest does not exist
-        """
+        """Load and cache the model manifest."""
         if self._manifest is not None:
             return self._manifest
             
@@ -37,6 +31,8 @@ class ArtifactLoader:
         with open(manifest_path, 'r') as f:
             self._manifest = json.load(f)
             
+        self.validate_artifacts(self._manifest)
+            
         return self._manifest
 
     def load_preprocessor_config(self) -> Dict[str, Any]:
@@ -46,7 +42,7 @@ class ArtifactLoader:
             
         config_path = os.path.join(self.artifacts_dir, 'mock_preprocessor_v1.json')
         if not os.path.exists(config_path):
-            self._preprocessor_config = {}
+            raise FileNotFoundError(f"Preprocessor config not found at {config_path}")
         else:
             with open(config_path, 'r') as f:
                 self._preprocessor_config = json.load(f)
@@ -60,36 +56,44 @@ class ArtifactLoader:
             
         schema_path = os.path.join(self.artifacts_dir, 'feature_schema_v1.yaml')
         if not os.path.exists(schema_path):
-            self._feature_schema = {}
+            raise FileNotFoundError(f"Feature schema not found at {schema_path}")
         else:
             with open(schema_path, 'r') as f:
                 self._feature_schema = yaml.safe_load(f)
                 
         return self._feature_schema
 
-    def get_task_config(self, task_name: str) -> Dict[str, Any]:
-        """Get configuration for a specific task from manifest.
+    def validate_artifacts(self, manifest: Dict[str, Any]) -> None:
+        """Validate artifact compatibility."""
+        preprocessor = self.load_preprocessor_config()
+        feature_schema = self.load_feature_schema()
         
-        Args:
-            task_name: Name of the task
-            
-        Returns:
-            Dict: Configuration for the task
-            
-        Raises:
-            KeyError: If task not found in manifest
-        """
+        # Check global version from schema
+        if feature_schema.get('version') != 'feature_schema_v1':
+            raise ArtifactMismatchError("Feature schema version mismatch.")
+        
+        # Check preprocessor version compatibility per task
+        preproc_version = preprocessor.get('version', 'mock_preprocessor_v1')
+        for task_name, config in manifest.get('tasks', {}).items():
+            if config.get('preprocessor_version') != preproc_version:
+                raise ArtifactMismatchError(
+                    f"Preprocessor version mismatch for task {task_name}. "
+                    f"Expected {config.get('preprocessor_version')} but got {preproc_version}"
+                )
+            # Ensure model family matches explanation method conceptually
+            family = config.get('family', '').lower()
+            if family not in ['xgboost', 'gru', 'mock']:
+                raise ArtifactMismatchError(f"Unsupported model family {family}")
+
+    def get_task_config(self, task_name: str) -> Dict[str, Any]:
+        """Get configuration for a specific task from manifest."""
         manifest = self.load_model_manifest()
         if 'tasks' not in manifest or task_name not in manifest['tasks']:
             raise KeyError(f"Task {task_name} not found in manifest")
         return manifest['tasks'][task_name]
 
     def get_model_hash(self) -> str:
-        """Get a composite model hash from per-task hashes in the manifest.
-
-        Returns:
-            str: Composite hash string built from all task model_hash values.
-        """
+        """Get a composite model hash from per-task hashes in the manifest."""
         import hashlib
         manifest = self.load_model_manifest()
         tasks = manifest.get('tasks', {})

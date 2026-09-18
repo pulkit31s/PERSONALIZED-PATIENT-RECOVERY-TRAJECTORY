@@ -6,7 +6,9 @@ from datetime import timedelta
 
 @pytest.fixture
 def client():
-    return TestClient(app)
+    # Make sure app startup event is triggered manually if needed, TestClient handles lifespan
+    with TestClient(app) as c:
+        yield c
 
 def test_health(client):
     resp = client.get('/health')
@@ -32,7 +34,7 @@ def test_predict_valid(client):
     data = resp.json()
     assert data['schema_version'] == 'prediction_schema_v1'
     assert 'predictions' in data
-    assert data['data_quality']['is_mock_data'] is True
+    assert 'padding_indicators' in data['data_quality']
 
 def test_predict_unknown_stay(client):
     body = {
@@ -68,5 +70,5 @@ def test_api_and_pipeline_match(client):
     }
     api_resp = client.post('/predict', json=body)
     api_data = api_resp.json()
-    assert api_data['predictions']['sofa_delta_24h']['value'] == pipe_resp.predictions.sofa_delta_24h.value
-    assert api_data['predictions']['organ_support_initiation']['probability'] == pipe_resp.predictions.organ_support_initiation.probability
+    assert api_data['predictions']['recovery']['delta_24h'] == pipe_resp.predictions.recovery.delta_24h
+    assert api_data['predictions']['organ_support']['calibrated_probability'] == pipe_resp.predictions.organ_support.calibrated_probability

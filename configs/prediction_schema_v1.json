@@ -20,60 +20,57 @@
     },
     "predictions": {
       "type": "object",
-      "required": ["sofa_delta_24h", "sofa_delta_48h", "remaining_icu_time", "organ_support_initiation"],
+      "required": ["recovery", "icu_stay_time", "organ_support"],
       "properties": {
-        "sofa_delta_24h": {
+        "recovery": {
           "type": "object",
-          "required": ["value", "unit"],
+          "required": ["delta_24h", "delta_48h", "reconstructed_sofa_24h", "reconstructed_sofa_48h"],
           "properties": {
-            "value": { "type": "number" },
-            "unit": { "type": "string", "const": "SOFA points" }
+            "delta_24h": { "type": "number" },
+            "delta_48h": { "type": "number" },
+            "reconstructed_sofa_24h": { "type": "number" },
+            "reconstructed_sofa_48h": { "type": "number" }
           }
         },
-        "sofa_delta_48h": {
+        "icu_stay_time": {
           "type": "object",
-          "required": ["value", "unit"],
+          "required": ["remaining_hours"],
           "properties": {
-            "value": { "type": "number" },
-            "unit": { "type": "string", "const": "SOFA points" }
+            "remaining_hours": { "type": "number" }
           }
         },
-        "remaining_icu_time": {
+        "organ_support": {
           "type": "object",
-          "required": ["value", "unit"],
+          "required": ["calibrated_probability"],
           "properties": {
-            "value": { "type": "number" },
-            "unit": { "type": "string", "const": "hours" }
-          }
-        },
-        "organ_support_initiation": {
-          "type": "object",
-          "required": ["probability", "threshold", "alert", "monitored_support_types"],
-          "properties": {
-            "probability": { "type": "number", "minimum": 0, "maximum": 1 },
+            "calibrated_probability": { "type": "number", "minimum": 0, "maximum": 1 },
             "threshold": { "type": "number", "minimum": 0, "maximum": 1 },
-            "alert": { "type": "boolean" },
-            "monitored_support_types": {
-              "type": "array",
-              "items": { "type": "string" }
-            }
+            "support_class": { "type": "boolean" }
           }
         }
       }
     },
     "explanations": {
       "type": ["object", "null"],
-      "properties": {
-        "status": { "type": "string" },
-        "method": { "type": "string" },
-        "items": {
-          "type": "array",
+      "additionalProperties": {
+        "type": "object",
+        "properties": {
+          "status": { "type": "string" },
+          "method": { "type": "string" },
+          "model_hash": { "type": "string" },
+          "prediction_cutoff": { "type": "string", "format": "date-time" },
           "items": {
-            "type": "object",
-            "properties": {
-              "feature_name": { "type": "string" },
-              "contribution": { "type": "number" },
-              "direction": { "type": "string", "enum": ["positive", "negative"] }
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "feature_name": { "type": "string" },
+                "time_bin": { "type": "string" },
+                "timestep": { "type": "integer" },
+                "feature_value": { "type": "number" },
+                "contribution": { "type": "number" },
+                "direction": { "type": "string", "enum": ["positive", "negative"] }
+              }
             }
           }
         }
@@ -81,24 +78,37 @@
     },
     "data_quality": {
       "type": "object",
-      "required": ["observed_bin_count", "total_bin_count", "is_mock_data"],
       "properties": {
-        "observed_bin_count": { "type": "integer" },
-        "total_bin_count": { "type": "integer" },
-        "missingness_summary": { "type": "object" },
-        "is_mock_data": { "type": "boolean" }
+        "observed_bin_counts": { "type": "object" },
+        "missingness_summaries": { "type": "object" },
+        "padding_indicators": { "type": "object" },
+        "available_historical_information": { "type": "object" },
+        "feature_masks": { "type": "object" }
       }
     },
     "metadata": {
       "type": "object",
-      "required": ["pipeline_version", "model_manifest_version", "feature_schema_version", "label_schema_version", "preprocessor_version", "model_hash"],
+      "required": ["global_pipeline_version", "tasks"],
       "properties": {
-        "pipeline_version": { "type": "string" },
-        "model_manifest_version": { "type": "string" },
-        "feature_schema_version": { "type": "string" },
-        "label_schema_version": { "type": "string" },
-        "preprocessor_version": { "type": "string" },
-        "model_hash": { "type": "string" }
+        "global_pipeline_version": { "type": "string" },
+        "tasks": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "object",
+            "required": ["model_family", "model_version", "artifact_hash", "feature_version", "label_version", "split_version", "preprocessor_version"],
+            "properties": {
+              "model_family": { "type": "string" },
+              "model_version": { "type": "string" },
+              "artifact_hash": { "type": "string" },
+              "feature_version": { "type": "string" },
+              "label_version": { "type": "string" },
+              "split_version": { "type": "string" },
+              "preprocessor_version": { "type": "string" },
+              "calibrator_version": { "type": "string" },
+              "threshold_version": { "type": "string" }
+            }
+          }
+        }
       }
     },
     "replay": {

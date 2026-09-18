@@ -14,6 +14,10 @@ class ArtifactLoadError(Exception):
     """Exception raised when an artifact cannot be loaded."""
     pass
 
+class ArtifactMismatchError(Exception):
+    """Exception raised when artifacts are incompatible."""
+    pass
+
 def validate_prediction_request(stay_id: str, prediction_time: datetime, stay_metadata: dict) -> None:
     """Validate a prediction request against stay metadata.
     

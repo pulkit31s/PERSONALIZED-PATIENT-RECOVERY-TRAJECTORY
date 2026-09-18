@@ -1,6 +1,6 @@
 {
   "manifest_version": "selected_models_v1",
-  "description": "Mock model manifest — NOT trained on clinical data",
+  "description": "Mock model manifest \u00e2\u20ac\u201d NOT trained on clinical data",
   "is_mock": true,
   "tasks": {
     "sofa_delta_24h": {

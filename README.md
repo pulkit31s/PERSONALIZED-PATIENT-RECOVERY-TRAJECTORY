@@ -17,6 +17,7 @@ Retrospective ICU forecasting system with four research outputs:
 
 ```bash
 pip install -r requirements.txt
+pip install streamlit
 ```
 
 ### Run Tests
@@ -31,6 +32,12 @@ pytest tests/ -v
 uvicorn api.main:app --reload --host 0.0.0.0 --port 8000
 ```
 
+### Start the Dashboard
+
+```bash
+streamlit run dashboard/app.py
+```
+
 ### Example Prediction Request
 
 ```bash
@@ -43,18 +50,6 @@ curl -X POST http://localhost:8000/predict \
   }'
 ```
 
-### Health Check
-
-```bash
-curl http://localhost:8000/health
-```
-
-### Model Metadata
-
-```bash
-curl http://localhost:8000/model-metadata
-```
-
 ## Project Structure
 
 ```
@@ -63,22 +58,14 @@ src/labels/           # Organ-support labeling logic
 src/schemas/          # Pydantic request/response models
 src/serving/          # Prediction pipeline, feature builder, history
 src/mock/             # Mock data and predictors
+src/explainability/   # TreeSHAP and IG explanation routing
+dashboard/            # Streamlit dashboard
 api/                  # FastAPI application
 tests/                # pytest test suite
 data/demo/            # Synthetic CSV data
 artifacts/mock/       # Mock model manifest and configs
 docs/                 # Design documentation
 ```
-
-## Mock Data
-
-6 synthetic ICU stays with different scenarios:
-- `mock_stay_001`: Normal 72h stay, no support
-- `mock_stay_002`: Short 8h stay (censoring tests)
-- `mock_stay_003`: Vasopressor starting 6h after admission
-- `mock_stay_004`: Invasive ventilation starting 10h after admission
-- `mock_stay_005`: Both supports from admission
-- `mock_stay_006`: NIV only (non-qualifying)
 
 ## Key Design Decisions
 
@@ -87,14 +74,12 @@ docs/                 # Design documentation
 3. **Explicit censoring**: Incomplete follow-up is never silently treated as negative
 4. **Deterministic mock predictions**: Based on feature hashing with fixed seeds
 5. **Abstract interfaces**: FeatureBuilder, ArtifactLoader ready for real implementations
+6. **Task-Specific Explanations**: XGBoost uses TreeSHAP, GRU uses Integrated Gradients.
 
 ## What Is NOT Implemented
 
 - Real MIMIC-IV data extraction
 - Real model training (XGBoost, GRU)
-- Calibration
-- Final explainability (SHAP/LIME)
-- Dashboard
 - Production deployment
 - Drug name normalization
 - Route validation
@@ -102,9 +87,9 @@ docs/                 # Design documentation
 ## Integration Points
 
 - **Sanskruti**: Feature engineering, model training
-- **Vedant**: Dashboard, visualization
+- **Vedant**: Dashboard UI/UX expansion
 - Replace `MockFeatureBuilder` with real feature builder
-- Replace `MockPredictor` with trained model inference
+- Replace `MockPredictor` with trained model inference by loading artifacts in pipeline
 - Replace `MOCK_STAYS` with MIMIC-IV extraction
 
 ## License

@@ -1,0 +1,224 @@
+{
+  "schema_version": "prediction_schema_v1",
+  "request": {
+    "stay_id": "mock_stay_001",
+    "prediction_time": "2026-01-01T18:00:00Z"
+  },
+  "predictions": {
+    "recovery": {
+      "delta_24h": 2.9,
+      "delta_48h": 0.6,
+      "reconstructed_sofa_24h": 7.9,
+      "reconstructed_sofa_48h": 5.6
+    },
+    "icu_stay_time": {
+      "remaining_hours": 19.828676368608114
+    },
+    "organ_support": {
+      "calibrated_probability": 0.11559276491236947,
+      "threshold": 0.5,
+      "support_class": false
+    }
+  },
+  "explanations": {
+    "sofa_delta_24h": {
+      "status": "success",
+      "method": "TreeSHAP",
+      "model_hash": "mock-sofa24-hash-abc123",
+      "prediction_cutoff": "2026-01-01T18:00:00Z",
+      "items": [
+        {
+          "feature_name": "mock_feature_0",
+          "time_bin": "bin_0",
+          "timestep": null,
+          "feature_value": 2.9,
+          "contribution": 0.017,
+          "direction": "negative"
+        },
+        {
+          "feature_name": "mock_feature_1",
+          "time_bin": "bin_0",
+          "timestep": null,
+          "feature_value": 1.869,
+          "contribution": 0.079,
+          "direction": "negative"
+        },
+        {
+          "feature_name": "mock_feature_2",
+          "time_bin": "bin_0",
+          "timestep": null,
+          "feature_value": 4.482,
+          "contribution": 0.018,
+          "direction": "negative"
+        }
+      ]
+    },
+    "sofa_delta_48h": {
+      "status": "success",
+      "method": "TreeSHAP",
+      "model_hash": "mock-sofa48-hash-def456",
+      "prediction_cutoff": "2026-01-01T18:00:00Z",
+      "items": [
+        {
+          "feature_name": "mock_feature_0",
+          "time_bin": "bin_0",
+          "timestep": null,
+          "feature_value": 2.664,
+          "contribution": 0.187,
+          "direction": "negative"
+        },
+        {
+          "feature_name": "mock_feature_1",
+          "time_bin": "bin_0",
+          "timestep": null,
+          "feature_value": 1.721,
+          "contribution": 0.013,
+          "direction": "positive"
+        },
+        {
+          "feature_name": "mock_feature_2",
+          "time_bin": "bin_0",
+          "timestep": null,
+          "feature_value": 2.775,
+          "contribution": 0.046,
+          "direction": "negative"
+        }
+      ]
+    },
+    "remaining_icu_time": {
+      "status": "success",
+      "method": "IntegratedGradients",
+      "model_hash": "mock-icutime-hash-ghi789",
+      "prediction_cutoff": "2026-01-01T18:00:00Z",
+      "items": [
+        {
+          "feature_name": "mock_feature_0",
+          "time_bin": null,
+          "timestep": 3,
+          "feature_value": 0.659,
+          "contribution": 0.165,
+          "direction": "negative"
+        },
+        {
+          "feature_name": "mock_feature_1",
+          "time_bin": null,
+          "timestep": 7,
+          "feature_value": 4.047,
+          "contribution": 0.137,
+          "direction": "positive"
+        },
+        {
+          "feature_name": "mock_feature_2",
+          "time_bin": null,
+          "timestep": 3,
+          "feature_value": 4.022,
+          "contribution": 0.033,
+          "direction": "negative"
+        }
+      ]
+    },
+    "organ_support_initiation": {
+      "status": "success",
+      "method": "IntegratedGradients",
+      "model_hash": "mock-support-hash-jkl012",
+      "prediction_cutoff": "2026-01-01T18:00:00Z",
+      "items": [
+        {
+          "feature_name": "mock_feature_0",
+          "time_bin": null,
+          "timestep": 8,
+          "feature_value": 3.008,
+          "contribution": 0.168,
+          "direction": "positive"
+        },
+        {
+          "feature_name": "mock_feature_1",
+          "time_bin": null,
+          "timestep": 5,
+          "feature_value": 3.832,
+          "contribution": 0.146,
+          "direction": "negative"
+        },
+        {
+          "feature_name": "mock_feature_2",
+          "time_bin": null,
+          "timestep": 8,
+          "feature_value": 4.141,
+          "contribution": 0.147,
+          "direction": "negative"
+        }
+      ]
+    }
+  },
+  "data_quality": {
+    "observed_bin_counts": {
+      "all": 2
+    },
+    "missingness_summaries": {
+      "all": {}
+    },
+    "padding_indicators": {
+      "all": false
+    },
+    "available_historical_information": {
+      "hours_since_admission": 24.0
+    },
+    "feature_masks": {
+      "all": {}
+    }
+  },
+  "metadata": {
+    "global_pipeline_version": "pipeline_v1",
+    "tasks": {
+      "sofa_delta_24h": {
+        "model_family": "xgboost",
+        "model_version": "mock_sofa_24_v1",
+        "artifact_hash": "mock-sofa24-hash-abc123",
+        "feature_version": "mock_v1",
+        "label_version": "mock_v1",
+        "split_version": "mock_v1",
+        "preprocessor_version": "mock_preprocessor_v1",
+        "calibrator_version": "none",
+        "threshold_version": null
+      },
+      "sofa_delta_48h": {
+        "model_family": "xgboost",
+        "model_version": "mock_sofa_48_v1",
+        "artifact_hash": "mock-sofa48-hash-def456",
+        "feature_version": "mock_v1",
+        "label_version": "mock_v1",
+        "split_version": "mock_v1",
+        "preprocessor_version": "mock_preprocessor_v1",
+        "calibrator_version": "none",
+        "threshold_version": null
+      },
+      "remaining_icu_time": {
+        "model_family": "gru",
+        "model_version": "mock_icu_time_v1",
+        "artifact_hash": "mock-icutime-hash-ghi789",
+        "feature_version": "mock_v1",
+        "label_version": "mock_v1",
+        "split_version": "mock_v1",
+        "preprocessor_version": "mock_preprocessor_v1",
+        "calibrator_version": "none",
+        "threshold_version": null
+      },
+      "organ_support_initiation": {
+        "model_family": "gru",
+        "model_version": "mock_support_v1",
+        "artifact_hash": "mock-support-hash-jkl012",
+        "feature_version": "mock_v1",
+        "label_version": "mock_v1",
+        "split_version": "mock_v1",
+        "preprocessor_version": "mock_preprocessor_v1",
+        "calibrator_version": "mock",
+        "threshold_version": "v1"
+      }
+    }
+  },
+  "replay": {
+    "mode": "RETROSPECTIVE_SEQUENTIAL_REPLAY",
+    "future_data_used": false,
+    "history_truncated_at": "2026-01-01T18:00:00Z"
+  }
+}
